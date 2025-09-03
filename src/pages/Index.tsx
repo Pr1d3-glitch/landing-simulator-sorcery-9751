@@ -1,67 +1,56 @@
 
 import { useEffect, useState } from 'react';
-import Header from '@/components/Header';
-import Terminal from '@/components/Terminal';
-import EmailForm from '@/components/EmailForm';
-import FeatureCard from '@/components/FeatureCard';
-import { MessageSquare, Code, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Play } from 'lucide-react';
 
 const Index = () => {
   const [loaded, setLoaded] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Add small delay before starting animations
     const timer = setTimeout(() => {
       setLoaded(true);
     }, 100);
-
     return () => clearTimeout(timer);
   }, []);
 
+  const handleTryIt = () => {
+    navigate('/try');
+  };
+
   return (
-    <div className="min-h-screen flex flex-col overflow-hidden bg-arcade-dark">
-      <div className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-        <Header />
-        
-        <div className={`mt-16 mb-12 text-center transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-            <span className="gradient-text">Create Games With Just a Prompt</span>
-          </h2>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
-            Type a prompt, get a playable game instantly. No coding required.
-          </p>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+      <div className={`text-center max-w-4xl mx-auto transition-all duration-1000 ${loaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className="mb-8">
+          <div className="inline-flex items-center space-x-2 mb-6">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Play className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="text-2xl font-bold">GameEngine</span>
+          </div>
         </div>
         
-        <Terminal />
+        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+          Play. Create. Share.
+        </h1>
         
-        <EmailForm />
+        <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+          Instant game runtime for creators and players
+        </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16 mb-16">
-          <FeatureCard 
-            icon={<MessageSquare size={28} />}
-            title="Chat to Create"
-            description="Simply describe your game idea in natural language and watch it come to life"
-            delay="delay-100"
-          />
-          
-          <FeatureCard 
-            icon={<Code size={28} />}
-            title="No Coding Required"
-            description="Create complex games without writing a single line of code"
-            delay="delay-300"
-          />
-          
-          <FeatureCard 
-            icon={<Play size={28} />}
-            title="Instantly Playable"
-            description="Get a working game in seconds that you can play and share immediately"
-            delay="delay-500"
-          />
-        </div>
+        <Button 
+          onClick={handleTryIt}
+          size="lg"
+          className="text-lg px-12 py-6 h-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+        >
+          <Play className="w-5 h-5 mr-2" />
+          Try it
+        </Button>
       </div>
       
-      <footer className="py-6 border-t border-gray-800 text-center text-sm text-gray-500">
-        <p>© 2025 Engine Arcade. All rights reserved.</p>
+      <footer className="absolute bottom-4 text-center text-sm text-muted-foreground">
+        <p>© 2025 GameEngine. Built for creators.</p>
       </footer>
     </div>
   );
