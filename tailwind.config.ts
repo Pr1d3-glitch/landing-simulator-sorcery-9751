@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import animatePlugin from "tailwindcss-animate";
 
 export default {
 	darkMode: ["class"],
@@ -71,17 +72,24 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
-				game: {
-					bg: 'hsl(var(--game-bg))',
-					panel: 'hsl(var(--game-panel))',
-					border: 'hsl(var(--game-border))',
-					accent: 'hsl(var(--game-accent))',
-					text: 'hsl(var(--game-text))',
-					muted: 'hsl(var(--game-muted))'
-				}
-			},
-			borderRadius: {
-				lg: 'var(--radius)',
+                                game: {
+                                        bg: 'hsl(var(--game-bg))',
+                                        panel: 'hsl(var(--game-panel))',
+                                        border: 'hsl(var(--game-border))',
+                                        accent: 'hsl(var(--game-accent))',
+                                        text: 'hsl(var(--game-text))',
+                                        muted: 'hsl(var(--game-muted))'
+                                },
+                                arcade: {
+                                        purple: '#7B68EE',
+                                        pink: '#FF61A6',
+                                        dark: '#0B0E17',
+                                        terminal: '#11141F',
+                                        gray: '#4B5563'
+                                }
+                        },
+                        borderRadius: {
+                                lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
 			},
@@ -124,5 +132,5 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+        plugins: [animatePlugin],
 } satisfies Config;
