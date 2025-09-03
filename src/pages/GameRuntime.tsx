@@ -6,8 +6,8 @@ import {
   Maximize2,
   Volume2,
   VolumeX,
-  PanelLeft,
   Home,
+  PanelLeft
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -103,16 +103,18 @@ const GameRuntime = () => {
     toast({ title: 'Deployment started' });
   }, [toast]);
 
-  // session timer
+  // Session timer
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: NodeJS.Timeout | undefined;
     if (gameState === 'playing') {
       interval = setInterval(() => setSessionTime((s) => s + 1), 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [gameState]);
 
-  // performance simulation
+  // Performance simulation
   useEffect(() => {
     const interval = setInterval(() => {
       setPerformance((prev) => ({
@@ -370,7 +372,10 @@ const GameRuntime = () => {
             <StudioPanel />
           </div>
         </ResizablePanel>
+
         <ResizableHandle className="bg-game-border hover:bg-game-accent transition-colors hidden md:block" />
+
+        {/* Right Panel - Game Runtime */}
         <ResizablePanel defaultSize={70} minSize={50}>
           <div className="h-full bg-game-bg relative">
             <div className="w-full h-full bg-gradient-to-b from-arcade-purple to-arcade-pink relative overflow-hidden">
