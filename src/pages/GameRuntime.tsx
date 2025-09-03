@@ -1,149 +1,318 @@
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  Settings,
-  Timer,
-  Save,
-  Upload,
-  Download,
+import {
+  Play,
+  Pause,
+  RotateCcw,
   Maximize2,
-  Monitor,
-  Cpu,
-  Activity,
   Volume2,
   VolumeX,
-  HelpCircle,
-  ChevronDown,
-  ChevronRight,
-  User,
-  Trophy,
-  Share2,
-  Home
+  PanelLeft,
+  Home,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useToast } from '@/hooks/use-toast';
-import GameCatalog from '@/components/GameCatalog';
-
-interface GameMetadata {
-  title: string;
-  version: string;
-  author: string;
-  description: string;
-  genre: string;
-  rating: number;
-}
 
 interface PerformanceStats {
   fps: number;
   cpu: number;
-  gpu: number;
   memory: number;
 }
+
+const genres = ['platformer', 'runner', 'shooter', 'RPG', 'puzzle'];
+const artStyles = ['pixel', 'flat', 'low-poly'];
+const templates = ['blank', 'endless', 'boss-fight'];
+
+const buildSteps = [
+  'parse',
+  'design-doc',
+  'codegen',
+  'type-check',
+  'bundle',
+  'asset bake',
+];
 
 const GameRuntime = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'paused'>('idle');
-  const [difficulty, setDifficulty] = useState('normal');
   const [sessionTime, setSessionTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [controlsOpen, setControlsOpen] = useState(true);
   const [performance, setPerformance] = useState<PerformanceStats>({
     fps: 60,
     cpu: 15,
-    gpu: 8,
-    memory: 45
+    memory: 45,
   });
+  const [showSidebar, setShowSidebar] = useState(false);
 
-  const [gameMetadata, setGameMetadata] = useState<GameMetadata>({
-    title: 'Forest Adventure',
-    version: '1.2.0',
-    author: 'GameDev Studio',
-    description: 'An immersive RPG experience in a mystical forest world',
-    genre: 'RPG',
-    rating: 4.8
-  });
+  // prompt studio state
+  const [prompt, setPrompt] = useState('');
+  const [template, setTemplate] = useState('blank');
+  const [genre, setGenre] = useState<string | null>(null);
+  const [artStyle, setArtStyle] = useState('pixel');
+  const [difficulty, setDifficulty] = useState('normal');
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [sfxEnabled, setSfxEnabled] = useState(true);
+  const [seed, setSeed] = useState('');
+  const [camera, setCamera] = useState('side');
+  const [physics, setPhysics] = useState('arcade');
+  const [inputScheme, setInputScheme] = useState('keyboard');
+  const [buildLogs, setBuildLogs] = useState<string[]>([]);
 
-  // Session timer
+  const runBuild = useCallback(async () => {
+    setBuildLogs([]);
+    for (const step of buildSteps) {
+      setBuildLogs((prev) => [...prev, `▶ ${step}`]);
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    toast({ title: 'Build complete' });
+  }, [toast]);
+
+  const handleGenerate = useCallback(() => {
+    runBuild();
+  }, [runBuild]);
+
+  const handleRefine = useCallback(() => {
+    setPrompt((p) => `${p}\n`);
+    runBuild();
+  }, [runBuild]);
+
+  const handleRegenerate = useCallback(() => {
+    runBuild();
+  }, [runBuild]);
+
+  const handleSaveVersion = useCallback(() => {
+    toast({ title: 'Version saved' });
+  }, [toast]);
+
+  const handleExport = useCallback(() => {
+    toast({ title: 'Exported zip' });
+  }, [toast]);
+
+  const handleDeploy = useCallback(() => {
+    toast({ title: 'Deployment started' });
+  }, [toast]);
+
+  // session timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (gameState === 'playing') {
-      interval = setInterval(() => {
-        setSessionTime(prev => prev + 1);
-      }, 1000);
+      interval = setInterval(() => setSessionTime((s) => s + 1), 1000);
     }
     return () => clearInterval(interval);
   }, [gameState]);
 
-  // Performance monitoring simulation
+  // performance simulation
   useEffect(() => {
     const interval = setInterval(() => {
-      setPerformance(prev => ({
+      setPerformance((prev) => ({
         fps: Math.max(30, Math.min(60, prev.fps + (Math.random() - 0.5) * 10)),
         cpu: Math.max(5, Math.min(80, prev.cpu + (Math.random() - 0.5) * 20)),
-        gpu: Math.max(2, Math.min(60, prev.gpu + (Math.random() - 0.5) * 15)),
-        memory: Math.max(20, Math.min(80, prev.memory + (Math.random() - 0.5) * 10))
+        memory: Math.max(20, Math.min(80, prev.memory + (Math.random() - 0.5) * 10)),
       }));
     }, 2000);
     return () => clearInterval(interval);
   }, []);
 
-  const handlePlayPause = useCallback(() => {
-    if (gameState === 'idle' || gameState === 'paused') {
-      setGameState('playing');
-      toast({ title: 'Game started' });
-    } else {
-      setGameState('paused');
-      toast({ title: 'Game paused' });
-    }
-  }, [gameState, toast]);
-
-  const handleReset = useCallback(() => {
-    setGameState('idle');
-    setSessionTime(0);
-    toast({ title: 'Game reset' });
-  }, [toast]);
-
-  const handleSave = useCallback(() => {
-    toast({ title: 'Game saved', description: 'Progress saved to cloud' });
-  }, [toast]);
-
-  const handleLoad = useCallback(() => {
-    toast({ title: 'Game loaded', description: 'Progress restored from cloud' });
-  }, [toast]);
-
-  const handleGameSelect = useCallback((game: any) => {
-    setGameMetadata({
-      title: game.title,
-      version: game.version,
-      author: game.author,
-      description: game.description,
-      genre: game.genre,
-      rating: game.rating
-    });
-    setGameState('idle');
-    setSessionTime(0);
-  }, []);
-
   const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  const StudioPanel = () => (
+    <div className="p-4 space-y-4">
+      <Card className="bg-game-panel border-game-border">
+        <CardHeader>
+          <CardTitle className="text-game-text">Prompt & Build Studio</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs text-game-muted">Template</label>
+            <Select value={template} onValueChange={setTemplate}>
+              <SelectTrigger className="bg-game-bg border-game-border text-game-text">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-game-panel border-game-border">
+                {templates.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            className="bg-game-bg border-game-border text-game-text"
+            rows={6}
+            placeholder="Describe your game..."
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {genres.map((g) => (
+              <Badge
+                key={g}
+                variant={genre === g ? 'default' : 'outline'}
+                className="cursor-pointer"
+                onClick={() => setGenre(g)}
+              >
+                {g}
+              </Badge>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-game-muted">Art style</label>
+              <Select value={artStyle} onValueChange={setArtStyle}>
+                <SelectTrigger className="bg-game-bg border-game-border text-game-text">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-game-panel border-game-border">
+                  {artStyles.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs text-game-muted">Difficulty</label>
+              <Select value={difficulty} onValueChange={setDifficulty}>
+                <SelectTrigger className="bg-game-bg border-game-border text-game-text">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-game-panel border-game-border">
+                  <SelectItem value="easy">easy</SelectItem>
+                  <SelectItem value="normal">normal</SelectItem>
+                  <SelectItem value="hard">hard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <Switch checked={audioEnabled} onCheckedChange={setAudioEnabled} />
+              <span className="text-sm text-game-text">Audio</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch checked={sfxEnabled} onCheckedChange={setSfxEnabled} />
+              <span className="text-sm text-game-text">SFX</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-game-muted">Seed</label>
+            <Input
+              value={seed}
+              onChange={(e) => setSeed(e.target.value)}
+              className="bg-game-bg border-game-border text-game-text"
+            />
+          </div>
+
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="w-full justify-between text-game-text hover:bg-game-border p-0">
+                <span>Advanced</span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 pt-2">
+              <Input
+                value={camera}
+                onChange={(e) => setCamera(e.target.value)}
+                placeholder="camera"
+                className="bg-game-bg border-game-border text-game-text"
+              />
+              <Input
+                value={physics}
+                onChange={(e) => setPhysics(e.target.value)}
+                placeholder="physics"
+                className="bg-game-bg border-game-border text-game-text"
+              />
+              <Input
+                value={inputScheme}
+                onChange={(e) => setInputScheme(e.target.value)}
+                placeholder="input scheme"
+                className="bg-game-bg border-game-border text-game-text"
+              />
+            </CollapsibleContent>
+          </Collapsible>
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={handleGenerate} className="bg-game-accent text-white hover:bg-game-accent/80">
+              Generate
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleRefine} className="border-game-border text-game-text">
+              Refine
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleRegenerate} className="border-game-border text-game-text">
+              Regenerate
+            </Button>
+            <Button size="sm" variant="outline" className="border-game-border text-game-text">
+              Diff
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleSaveVersion} className="border-game-border text-game-text">
+              Save Version
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleExport} className="border-game-border text-game-text">
+              Export Zip
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleDeploy} className="border-game-border text-game-text">
+              Deploy
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-game-panel border-game-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-game-text">Build Log</CardTitle>
+        </CardHeader>
+        <CardContent className="bg-black/40 rounded-md p-2 h-32 overflow-y-auto text-xs font-mono space-y-1 text-game-text">
+          {buildLogs.length ? buildLogs.map((l, i) => <div key={i}>{l}</div>) : <div className="text-game-muted">No build yet</div>}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-game-panel border-game-border">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-game-text">Resources</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div>
+            <div className="text-game-muted">FPS</div>
+            <div className="text-lg font-mono text-game-accent">{Math.round(performance.fps)}</div>
+          </div>
+          <div>
+            <div className="text-game-muted">CPU</div>
+            <div className="text-lg font-mono text-game-accent">{Math.round(performance.cpu)}%</div>
+          </div>
+          <div>
+            <div className="text-game-muted">Memory</div>
+            <div className="text-lg font-mono text-game-accent">{Math.round(performance.memory)}%</div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   return (
     <div className="h-screen bg-game-bg text-game-text">
-      {/* Navigation Header */}
       <div className="bg-game-panel border-b border-game-border p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -156,22 +325,24 @@ const GameRuntime = () => {
               <Home className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">Home</span>
             </Button>
-            <div className="hidden md:block">
-              <GameCatalog onGameSelect={handleGameSelect} selectedGame={gameMetadata} />
-            </div>
-            <h1 className="text-lg font-semibold md:hidden">{gameMetadata.title}</h1>
           </div>
           <div className="flex space-x-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={handlePlayPause}
+              onClick={() => setGameState((s) => (s === 'playing' ? 'paused' : 'playing'))}
               className="text-game-text hover:bg-game-border"
             >
               {gameState === 'playing' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              <span className="hidden sm:inline ml-1">
-                {gameState === 'playing' ? 'Pause' : 'Play'}
-              </span>
+              <span className="hidden sm:inline ml-1">{gameState === 'playing' ? 'Pause' : 'Play'}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setGameState('idle')}
+              className="text-game-text hover:bg-game-border"
+            >
+              <RotateCcw className="w-4 h-4" />
             </Button>
             <Button
               variant="ghost"
@@ -181,251 +352,47 @@ const GameRuntime = () => {
             >
               <Maximize2 className="w-4 h-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSidebar(true)}
+              className="text-game-text hover:bg-game-border md:hidden"
+            >
+              <PanelLeft className="w-4 h-4" />
+            </Button>
           </div>
         </div>
       </div>
 
       <ResizablePanelGroup direction="horizontal" className="h-full">
-        {/* Left Panel - Game Controls & Info */}
         <ResizablePanel defaultSize={30} minSize={20} maxSize={50} className="hidden md:block">
           <div className="h-full bg-game-panel border-r border-game-border overflow-y-auto">
-            <div className="p-4 space-y-4">
-              {/* Game Metadata */}
-              <Card className="bg-game-panel border-game-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg text-game-text">{gameMetadata.title}</CardTitle>
-                  <div className="flex items-center justify-between text-sm text-game-muted">
-                    <span>v{gameMetadata.version}</span>
-                    <span>⭐ {gameMetadata.rating}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <p className="text-sm text-game-muted">{gameMetadata.description}</p>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-game-muted">by {gameMetadata.author}</span>
-                    <span className="bg-game-accent px-2 py-1 rounded text-white">{gameMetadata.genre}</span>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Game Controls */}
-              <Card className="bg-game-panel border-game-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-game-text">Game Controls</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={handlePlayPause}
-                      className="flex-1 bg-game-accent hover:bg-game-accent/80 text-white"
-                    >
-                      {gameState === 'playing' ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-                      {gameState === 'playing' ? 'Pause' : 'Play'}
-                    </Button>
-                    <Button
-                      onClick={handleReset}
-                      variant="outline"
-                      className="border-game-border text-game-text hover:bg-game-border"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm text-game-muted">Difficulty</label>
-                    <Select value={difficulty} onValueChange={setDifficulty}>
-                      <SelectTrigger className="bg-game-bg border-game-border text-game-text">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-game-panel border-game-border">
-                        <SelectItem value="easy">Easy</SelectItem>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="hard">Hard</SelectItem>
-                        <SelectItem value="nightmare">Nightmare</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={handleSave}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-game-border text-game-text hover:bg-game-border"
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      onClick={handleLoad}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-game-border text-game-text hover:bg-game-border"
-                    >
-                      <Upload className="w-4 h-4 mr-1" />
-                      Load
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Session Info */}
-              <Card className="bg-game-panel border-game-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-game-text flex items-center">
-                    <Timer className="w-4 h-4 mr-2" />
-                    Session
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-mono text-game-accent">{formatTime(sessionTime)}</div>
-                  <div className="text-xs text-game-muted mt-1">Session time</div>
-                </CardContent>
-              </Card>
-
-              {/* Performance Stats */}
-              <Card className="bg-game-panel border-game-border">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-game-text flex items-center">
-                    <Activity className="w-4 h-4 mr-2" />
-                    Performance
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <div className="text-game-muted">FPS</div>
-                      <div className="text-lg font-mono text-game-accent">{Math.round(performance.fps)}</div>
-                    </div>
-                    <div>
-                      <div className="text-game-muted">CPU</div>
-                      <div className="text-lg font-mono text-game-accent">{Math.round(performance.cpu)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-game-muted">GPU</div>
-                      <div className="text-lg font-mono text-game-accent">{Math.round(performance.gpu)}%</div>
-                    </div>
-                    <div>
-                      <div className="text-game-muted">Memory</div>
-                      <div className="text-lg font-mono text-game-accent">{Math.round(performance.memory)}%</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Control Map */}
-              <Collapsible open={controlsOpen} onOpenChange={setControlsOpen}>
-                <Card className="bg-game-panel border-game-border">
-                  <CardHeader className="pb-2">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-between text-game-text hover:bg-game-border p-0">
-                        <span className="text-base font-semibold">Controls</span>
-                        {controlsOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                  </CardHeader>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-2 text-sm">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="text-game-muted">WASD</div>
-                        <div className="text-game-text">Move</div>
-                        <div className="text-game-muted">Space</div>
-                        <div className="text-game-text">Jump</div>
-                        <div className="text-game-muted">E</div>
-                        <div className="text-game-text">Interact</div>
-                        <div className="text-game-muted">Shift</div>
-                        <div className="text-game-text">Run</div>
-                        <div className="text-game-muted">Tab</div>
-                        <div className="text-game-text">Inventory</div>
-                        <div className="text-game-muted">Esc</div>
-                        <div className="text-game-text">Menu</div>
-                      </div>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-
-              {/* Help Section */}
-              <Collapsible open={helpOpen} onOpenChange={setHelpOpen}>
-                <Card className="bg-game-panel border-game-border">
-                  <CardHeader className="pb-2">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="w-full justify-between text-game-text hover:bg-game-border p-0">
-                        <span className="text-base font-semibold flex items-center">
-                          <HelpCircle className="w-4 h-4 mr-2" />
-                          Help
-                        </span>
-                        {helpOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                  </CardHeader>
-                  <CollapsibleContent>
-                    <CardContent className="space-y-2 text-sm text-game-muted">
-                      <p>• Use WASD to move around the forest</p>
-                      <p>• Collect items by walking over them</p>
-                      <p>• Talk to NPCs with the E key</p>
-                      <p>• Check your inventory with Tab</p>
-                      <p>• Save your progress regularly</p>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            </div>
+            <StudioPanel />
           </div>
         </ResizablePanel>
-
-        <ResizableHandle className="bg-game-border hover:bg-game-accent transition-colors" />
-
-        {/* Right Panel - Game Runtime */}
+        <ResizableHandle className="bg-game-border hover:bg-game-accent transition-colors hidden md:block" />
         <ResizablePanel defaultSize={70} minSize={50}>
           <div className="h-full bg-game-bg relative">
-            {/* Game Canvas Area */}
-            <div className="w-full h-full bg-gradient-to-b from-sky-300 to-sky-400 relative overflow-hidden">
-              {/* Sky and ground */}
-              <div className="absolute bottom-0 w-full h-1/2 bg-green-600"></div>
-              
-              {/* Trees */}
-              <div className="absolute bottom-20 left-1/4 transform -translate-x-1/2">
-                <div className="w-24 h-32 bg-green-800 clip-path-triangle relative">
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-4 h-8 bg-amber-800"></div>
-                </div>
-              </div>
-              
-              <div className="absolute bottom-32 right-1/4 transform translate-x-1/2">
-                <div className="w-16 h-24 bg-green-800 clip-path-triangle relative">
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-3 h-6 bg-amber-800"></div>
-                </div>
-              </div>
-              
-              <div className="absolute bottom-16 right-10">
-                <div className="w-20 h-28 bg-green-800 clip-path-triangle relative">
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full w-4 h-7 bg-amber-800"></div>
-                </div>
-              </div>
-
-              {/* Game state overlay */}
+            <div className="w-full h-full bg-gradient-to-b from-arcade-purple to-arcade-pink relative overflow-hidden">
               {gameState === 'idle' && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="text-center text-white">
                     <Play className="w-16 h-16 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold mb-2">Ready to Play</h3>
-                    <p className="text-lg">Click Play to start your adventure</p>
+                    <p className="text-lg">Click Play to start</p>
                   </div>
                 </div>
               )}
-
               {gameState === 'paused' && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <div className="text-center text-white">
                     <Pause className="w-16 h-16 mx-auto mb-4" />
-                    <h3 className="text-2xl font-bold mb-2">Game Paused</h3>
+                    <h3 className="text-2xl font-bold mb-2">Paused</h3>
                     <p className="text-lg">Click Play to continue</p>
                   </div>
                 </div>
               )}
             </div>
-
-            {/* Game Controls Overlay */}
             <div className="absolute top-4 right-4 flex space-x-2">
               <Button
                 variant="outline"
@@ -444,16 +411,12 @@ const GameRuntime = () => {
                 <Maximize2 className="w-4 h-4" />
               </Button>
             </div>
-
-            {/* Game Stats Overlay */}
             <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm rounded-lg p-3 text-white text-sm">
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
-                  <Activity className="w-4 h-4 mr-1" />
                   <span>{Math.round(performance.fps)} FPS</span>
                 </div>
                 <div className="flex items-center">
-                  <Timer className="w-4 h-4 mr-1" />
                   <span>{formatTime(sessionTime)}</span>
                 </div>
               </div>
@@ -461,6 +424,15 @@ const GameRuntime = () => {
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {showSidebar && (
+        <div className="fixed inset-0 z-50 flex md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowSidebar(false)}></div>
+          <div className="relative w-3/4 max-w-xs h-full bg-game-panel border-r border-game-border overflow-y-auto">
+            <StudioPanel />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
